@@ -1,103 +1,89 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useQuery, useLazyQuery } from '@apollo/client';
+import {
+  GET_ALL_EMPLOYEES,
+  GET_EMPLOYEES_BY_DEPARTMENT,
+} from '@/graphql/queries';
+import Link from 'next/link';
+import { useState } from 'react';
+
+export default function HomePage() {
+  const { loading, error, data } = useQuery(GET_ALL_EMPLOYEES);
+  const [selectedDept, setSelectedDept] = useState('');
+  const [getByDept, { data: deptData }] = useLazyQuery(GET_EMPLOYEES_BY_DEPARTMENT);
+
+  const handleFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const dept = e.target.value;
+    setSelectedDept(dept);
+
+    if (dept === '') {
+      // Show all employees
+      return;
+    } else {
+      getByDept({ variables: { department: dept } });
+    }
+  };
+
+  const employees =
+    selectedDept === ''
+      ? data?.getAllEmployees || []
+      : deptData?.getEmployeesByDepartment || [];
+
+  if (loading && !data) return <p className="text-center mt-10 text-gray-600">Loading...</p>;
+  if (error) return <p className="text-center mt-10 text-red-500">Error: {error.message}</p>;
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="max-w-3xl mx-auto p-4">
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      <h1 className="text-2xl font-bold mb-4 text-center">Employee Directory</h1>
+
+      <div className="mb-4 flex justify-between items-center">
+  <Link href="/add-employee" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+    Add New Employee
+  </Link>
+  <select
+    value={selectedDept}
+    onChange={handleFilter}
+    className="border p-2 rounded"
+  >
+    <option value="">All Departments</option>
+    <option value="Developer">Developer</option>
+    <option value="QA">QA</option>
+    <option value="Designer">Designer</option>
+    <option value="DevOps">DevOps</option>
+    <option value="Manager">Manager</option>
+    <option value="Intern">Intern</option>
+  </select>
+</div>
+
+
+      <table className="w-full border border-gray-300 rounded-md overflow-hidden">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="text-left p-2 border">Name</th>
+            <th className="text-left p-2 border">Position</th>
+          </tr>
+        </thead>
+        <tbody>
+          {employees.length === 0 ? (
+            <tr>
+              <td colSpan={2} className="text-center p-4 text-gray-500">
+                No employees found.
+              </td>
+            </tr>
+          ) : (
+            employees.map((emp: any) => (
+              <tr key={emp.id} className="hover:bg-gray-50">
+                <td className="p-2 border text-blue-600 underline">
+                  <Link href={`/employee/${emp.id}`}>{emp.name}</Link>
+                </td>
+                <td className="p-2 border">{emp.position}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </main>
   );
 }
